@@ -23,7 +23,7 @@ background-size:25px 25px}
 </head>
 <body>
 
-<h1>Room Layout v 1.5</h1>
+<h1>Room Layout v 1.6</h1>
 
 <div id="toolbar">
 <button onclick="addItem('wall')">Wall</button>
@@ -89,9 +89,17 @@ function makeResizable(el){
  handle.addEventListener("pointerdown",e=>{res=true;sx=e.clientX;sy=e.clientY;sw=el.offsetWidth;sh=el.offsetHeight;handle.setPointerCapture(e.pointerId);e.stopPropagation()});
  handle.addEventListener("pointermove",e=>{
   if(!res)return;
-  el.style.width=Math.max(grid,Math.round((sw+e.clientX-sx)/grid)*grid)+"px";
-  el.style.height=Math.max(grid,Math.round((sh+e.clientY-sy)/grid)*grid)+"px";
-  updateLength(el);
+  if(el.dataset.type==="wall"){
+  const r = Number(el.dataset.rotation || 0);
+  const vertical = r % 180 !== 0;
+  const delta = vertical ? (e.clientY - sy) : (e.clientX - sx);
+  el.style.width = Math.max(grid, Math.round((sw + delta) / grid) * grid) + "px";
+  el.style.height = "14px";
+} else {
+  el.style.width = Math.max(grid, Math.round((sw + e.clientX - sx) / grid) * grid) + "px";
+  el.style.height = Math.max(grid, Math.round((sh + e.clientY - sy) / grid) * grid) + "px";
+}
+updateLength(el);
  });
  handle.addEventListener("pointerup",e=>{res=false;try{handle.releasePointerCapture(e.pointerId)}catch{}});
 }
