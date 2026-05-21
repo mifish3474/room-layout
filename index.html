@@ -23,7 +23,7 @@ background-size:25px 25px}
 </head>
 <body>
 
-<h1>Room Layout v 1.7</h1>
+<h1>Room Layout v 1.8</h1>
 
 <div id="toolbar">
 <button onclick="addItem('wall')">Wall</button>
@@ -32,6 +32,7 @@ background-size:25px 25px}
 <button onclick="addItem('table')">Rolling Table</button>
 <button onclick="addItem('cabinet')">Cabinet</button>
 <button onclick="addItem('trash')">Trash Can</button>
+ <button onclick="addTextBox()">Text Box</button>
 <input id="customName" placeholder="Custom name">
 <input id="customColor" type="color" value="#cc66ff">
 <button onclick="createCustom()">Add Custom</button>
@@ -67,8 +68,21 @@ function addItem(type,x=80,y=80,r=0,w=null,h=null,label=null,color=null){
  item.style.background=color||t.color; item.style.color=t.text||"white";
  item.style.transform=`rotate(${r}deg)`;
  if(type==="trash") item.style.borderRadius="50%";
- item.innerHTML=`<div class="controls"><button class="mini rot">↻</button><button class="mini dim">⋮</button><button class="mini del">×</button></div><span>${label||t.label}</span><div class="resize"></div><div class="length"></div>`;
+ item.innerHTML=`<div class="controls"><button class="mini rot">↻</button><button class="mini dup">⧉</button><button class="mini dim">⋮</button><button class="mini del">×</button></div><span>${label||t.label}</span><div class="resize"></div><div class="length"></div>`;
  item.querySelector(".rot").onclick=e=>{e.stopPropagation();let nr=(+item.dataset.rotation+15)%360;item.dataset.rotation=nr;item.style.transform=`rotate(${nr}deg)`};
+ item.querySelector(".dup").onclick=e=>{
+ e.stopPropagation();
+ addItem(
+  item.dataset.type,
+  parseInt(item.style.left)+grid,
+  parseInt(item.style.top)+grid,
+  +item.dataset.rotation,
+  item.offsetWidth,
+  item.offsetHeight,
+  item.dataset.label,
+  item.dataset.color
+ );
+};
  item.querySelector(".del").onclick=e=>{e.stopPropagation();item.remove();updateLegend()};
  item.querySelector(".dim").onclick=e=>{e.stopPropagation();editDims(item)};
  makeDraggable(item); makeResizable(item); room.appendChild(item); updateLength(item); updateLegend();
@@ -135,6 +149,13 @@ function updateLegend(){
  document.getElementById("legend").innerHTML=unique.map(u=>`<span><span class="swatch" style="background:${u.color}"></span>${u.label}</span>`).join("");
 }
 
+function addTextBox(){
+ const text=prompt("Label text:");
+ if(!text)return;
+ addItem("textbox",80,80,0,150,50,text,"#ffffff");
+}
+types.textbox={label:"Text Box",w:150,h:50,color:"#ffffff",text:"black"};
+ 
 function saveLayout(){
  const data=[...document.querySelectorAll(".item")].map(el=>({type:el.dataset.type,x:parseInt(el.style.left),y:parseInt(el.style.top),rotation:+el.dataset.rotation,w:el.offsetWidth,h:el.offsetHeight,label:el.dataset.label,color:el.dataset.color}));
  localStorage.setItem("roomLayout",JSON.stringify(data));alert("Saved");
