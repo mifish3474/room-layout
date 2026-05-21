@@ -30,7 +30,7 @@ body{background:white}
 </style>
 </head>
 <body>
-<h1>Room Layout v 2.0</h1>
+<h1>Room Layout v 2.1</h1>
 
 <div id="toolbar">
 <button onclick="addWall()">Wall</button>
@@ -46,6 +46,7 @@ body{background:white}
 <button onclick="saveLayout()">Save</button>
 <button onclick="loadLayout()">Load</button>
 <button onclick="clearLayout()">Clear</button>
+<button onclick="toggleMeasurements()">Measurements</button>
 <button onclick="window.print()">Print</button>
 </div>
 
@@ -152,7 +153,16 @@ function saveLayout(){
  localStorage.setItem("roomLayoutV2",JSON.stringify(data));alert("Saved");
 }
 function loadLayout(){[...room.querySelectorAll("[data-kind]")].forEach(e=>e.remove());JSON.parse(localStorage.getItem("roomLayoutV2")||"[]").forEach(i=>i.kind==="wall"?addWall(i.x1,i.y1,i.x2,i.y2):addItem(i.type,i.x,i.y,i.rotation,i.w,i.h,i.label,i.color));updateLegend()}
-function clearLayout(){if(confirm("Clear layout?")){[...room.querySelectorAll("[data-kind]")].forEach(e=>e.remove());updateLegend()}}
+let measurementsVisible = true;
+
+function toggleMeasurements(){
+ measurementsVisible = !measurementsVisible;
+
+ document.querySelectorAll(".length").forEach(el=>{
+   el.style.display = measurementsVisible ? "block" : "none";
+ });
+}
+  function clearLayout(){if(confirm("Clear layout?")){[...room.querySelectorAll("[data-kind]")].forEach(e=>e.remove());updateLegend()}}
 </script>
 </body>
 </html>
