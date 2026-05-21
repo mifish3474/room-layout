@@ -2,115 +2,74 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Room 207 Layout</title>
-
 <style>
-  body { margin:0; font-family:Arial,sans-serif; background:#f4f4f4; }
-  h1 { text-align:center; margin:10px; }
-  #toolbar { display:flex; gap:8px; padding:10px; justify-content:center; flex-wrap:wrap; background:white; border-bottom:1px solid #ccc; }
-  button { padding:8px 10px; cursor:pointer; border:1px solid #888; background:white; border-radius:6px; }
-
-  #roomWrap { width:1200px; height:750px; margin:20px auto; position:relative; }
-
-  #room {
-    width:1200px; height:750px; position:relative; overflow:hidden;
-    background-color:white;
-    clip-path: polygon(7% 5%, 95% 5%, 95% 92%, 82% 92%, 82% 98%, 7% 98%, 7% 70%, 2% 65%, 7% 55%);
-    border:4px solid black;
-    background-image:
-      linear-gradient(to right, #ddd 1px, transparent 1px),
-      linear-gradient(to bottom, #ddd 1px, transparent 1px);
-    background-size:25px 25px;
-  }
-
-  #boundary {
-    position:absolute; inset:0; pointer-events:none;
-    clip-path: polygon(7% 5%, 95% 5%, 95% 92%, 82% 92%, 82% 98%, 7% 98%, 7% 70%, 2% 65%, 7% 55%);
-    border:5px solid black;
-  }
-
-  .item {
-    position:absolute; cursor:move; user-select:none; border:2px solid #333;
-    box-sizing:border-box; display:flex; align-items:center; justify-content:center;
-    font-size:12px; font-weight:bold; text-align:center; transform-origin:center center;
-  }
-
-  .desk { width:80px; height:45px; background:#8b5a2b; color:white; }
-  .teacher { width:140px; height:60px; background:#1e5eff; color:white; }
-  .table { width:120px; height:50px; background:#2aa84a; color:white; }
-  .cabinet { width:130px; height:40px; background:#444; color:white; }
-  .trash { width:45px; height:45px; background:#f0c400; color:black; border-radius:50%; }
-
-  .controls {
-    position:absolute; top:-24px; right:0; display:flex; gap:3px;
-  }
-  .mini {
-    font-size:10px; padding:2px 5px; border-radius:4px; background:white;
-  }
-
-  @media print {
-    #toolbar, .controls { display:none; }
-    body { background:white; }
-    #roomWrap { margin:0; transform:scale(.8); transform-origin:top left; }
-  }
+body{margin:0;font-family:Arial;background:#f4f4f4}
+h1{text-align:center;margin:10px}
+#toolbar{display:flex;gap:8px;padding:10px;justify-content:center;flex-wrap:wrap;background:white;border-bottom:1px solid #ccc}
+button{padding:8px 10px;cursor:pointer;border:1px solid #888;background:white;border-radius:6px}
+#room{width:1200px;height:750px;margin:20px auto;position:relative;background:white;border:4px solid black;
+background-image:linear-gradient(to right,#ddd 1px,transparent 1px),linear-gradient(to bottom,#ddd 1px,transparent 1px);
+background-size:25px 25px}
+.item{position:absolute;user-select:none;cursor:grab;border:2px solid #333;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;text-align:center;transform-origin:center}
+.item:active{cursor:grabbing}
+.desk{width:80px;height:45px;background:#8b5a2b;color:white}
+.teacher{width:140px;height:60px;background:#1e5eff;color:white}
+.table{width:120px;height:50px;background:#2aa84a;color:white}
+.cabinet{width:130px;height:40px;background:#444;color:white}
+.trash{width:45px;height:45px;background:#f0c400;color:black;border-radius:50%}
+.wall{width:180px;height:14px;background:black;color:white}
+.controls{position:absolute;top:-26px;right:0;display:flex;gap:3px}
+.mini{font-size:10px;padding:2px 5px;background:white;color:black}
+@media print{
+  #toolbar,.controls{display:none!important}
+  body{background:white}
+  #room{margin:0;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  .item{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+}
 </style>
 </head>
-
 <body>
+
 <h1>Room 207 Layout</h1>
 
 <div id="toolbar">
-  <button onclick="addItem('desk')">Student Desk</button>
-  <button onclick="addItem('teacher')">Teacher Desk</button>
-  <button onclick="addItem('table')">Rolling Table</button>
-  <button onclick="addItem('cabinet')">Cabinet</button>
-  <button onclick="addItem('trash')">Trash Can</button>
-  <button onclick="saveLayout()">Save</button>
-  <button onclick="loadLayout()">Load</button>
-  <button onclick="clearLayout()">Clear</button>
-  <button onclick="window.print()">Print</button>
+<button onclick="addItem('wall')">Wall</button>
+<button onclick="addItem('desk')">Student Desk</button>
+<button onclick="addItem('teacher')">Teacher Desk</button>
+<button onclick="addItem('table')">Rolling Table</button>
+<button onclick="addItem('cabinet')">Cabinet</button>
+<button onclick="addItem('trash')">Trash Can</button>
+<button onclick="saveLayout()">Save</button>
+<button onclick="loadLayout()">Load</button>
+<button onclick="clearLayout()">Clear</button>
+<button onclick="window.print()">Print</button>
 </div>
 
-<div id="roomWrap">
-  <div id="room"></div>
-</div>
+<div id="room"></div>
 
 <script>
-const room = document.getElementById("room");
+const room=document.getElementById("room");
+const labels={wall:"Wall",desk:"Desk",teacher:"Teacher",table:"Table",cabinet:"Cabinet",trash:"Trash"};
 
-const labels = {
-  desk: "Desk",
-  teacher: "Teacher",
-  table: "Table",
-  cabinet: "Cabinet",
-  trash: "Trash"
-};
+function addItem(type,x=80,y=80,r=0){
+  const item=document.createElement("div");
+  item.className="item "+type;
+  item.dataset.type=type;
+  item.dataset.rotation=r;
+  item.style.left=x+"px";
+  item.style.top=y+"px";
+  item.style.transform=`rotate(${r}deg)`;
+  item.innerHTML=`<div class="controls"><button class="mini rot">↻</button><button class="mini del">×</button></div><span>${labels[type]}</span>`;
 
-function addItem(type, x=80, y=80, rotation=0) {
-  const item = document.createElement("div");
-  item.className = "item " + type;
-  item.dataset.type = type;
-  item.dataset.rotation = rotation;
-  item.innerHTML = `
-    <div class="controls">
-      <button class="mini rotate">↻</button>
-      <button class="mini delete">×</button>
-    </div>
-    <span>${labels[type]}</span>
-  `;
-  item.style.left = x + "px";
-  item.style.top = y + "px";
-  item.style.transform = `rotate(${rotation}deg)`;
-
-  item.querySelector(".rotate").onclick = e => {
+  item.querySelector(".rot").onclick=e=>{
     e.stopPropagation();
-    let r = Number(item.dataset.rotation || 0) + 15;
-    item.dataset.rotation = r;
-    item.style.transform = `rotate(${r}deg)`;
+    let nr=(Number(item.dataset.rotation)+15)%360;
+    item.dataset.rotation=nr;
+    item.style.transform=`rotate(${nr}deg)`;
   };
 
-  item.querySelector(".delete").onclick = e => {
+  item.querySelector(".del").onclick=e=>{
     e.stopPropagation();
     item.remove();
   };
@@ -119,49 +78,56 @@ function addItem(type, x=80, y=80, rotation=0) {
   room.appendChild(item);
 }
 
-function makeDraggable(el) {
-  let offsetX = 0, offsetY = 0, dragging = false;
+function makeDraggable(el){
+  let startX,startY,startLeft,startTop,dragging=false;
 
-  el.addEventListener("mousedown", e => {
-    if (e.target.tagName === "BUTTON") return;
-    dragging = true;
-    offsetX = e.clientX - el.offsetLeft;
-    offsetY = e.clientY - el.offsetTop;
+  el.addEventListener("pointerdown",e=>{
+    if(e.target.tagName==="BUTTON")return;
+    dragging=true;
+    el.setPointerCapture(e.pointerId);
+    startX=e.clientX;
+    startY=e.clientY;
+    startLeft=parseInt(el.style.left)||0;
+    startTop=parseInt(el.style.top)||0;
+    e.preventDefault();
   });
 
-  document.addEventListener("mousemove", e => {
-    if (!dragging) return;
-    let x = e.clientX - offsetX;
-    let y = e.clientY - offsetY;
-    x = Math.round(x / 25) * 25;
-    y = Math.round(y / 25) * 25;
-    el.style.left = x + "px";
-    el.style.top = y + "px";
+  el.addEventListener("pointermove",e=>{
+    if(!dragging)return;
+    let x=startLeft+(e.clientX-startX);
+    let y=startTop+(e.clientY-startY);
+    x=Math.round(x/25)*25;
+    y=Math.round(y/25)*25;
+    el.style.left=x+"px";
+    el.style.top=y+"px";
   });
 
-  document.addEventListener("mouseup", () => dragging = false);
+  el.addEventListener("pointerup",e=>{
+    dragging=false;
+    try{el.releasePointerCapture(e.pointerId)}catch{}
+  });
 }
 
-function saveLayout() {
-  const data = [...document.querySelectorAll(".item")].map(el => ({
-    type: el.dataset.type,
-    x: parseInt(el.style.left),
-    y: parseInt(el.style.top),
-    rotation: Number(el.dataset.rotation || 0)
+function saveLayout(){
+  const data=[...document.querySelectorAll(".item")].map(el=>({
+    type:el.dataset.type,
+    x:parseInt(el.style.left),
+    y:parseInt(el.style.top),
+    rotation:Number(el.dataset.rotation||0)
   }));
-  localStorage.setItem("room207layout", JSON.stringify(data));
-  alert("Layout saved");
+  localStorage.setItem("room207layout",JSON.stringify(data));
+  alert("Saved");
 }
 
-function loadLayout() {
-  room.innerHTML = "";
-  const data = JSON.parse(localStorage.getItem("room207layout") || "[]");
-  data.forEach(i => addItem(i.type, i.x, i.y, i.rotation));
+function loadLayout(){
+  room.innerHTML="";
+  JSON.parse(localStorage.getItem("room207layout")||"[]").forEach(i=>addItem(i.type,i.x,i.y,i.rotation));
 }
 
-function clearLayout() {
-  if (confirm("Clear the layout?")) room.innerHTML = "";
+function clearLayout(){
+  if(confirm("Clear layout?"))room.innerHTML="";
 }
 </script>
+
 </body>
 </html>
