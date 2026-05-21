@@ -26,7 +26,36 @@ input[type=color]{padding:3px;width:42px;height:34px}
 .length{position:absolute;bottom:-30px;left:0;background:white;border:1px solid #999;padding:3px 8px;font-size:12px;color:black;min-width:45px;z-index:20;white-space:nowrap;display:none}
 .active .controls{display:flex}.active .resize,.active .length{display:block}
 .swatch{width:18px;height:18px;border:1px solid #333;display:inline-block;vertical-align:middle;margin-right:4px}
-#legend{display:flex;gap:12px;padding:12px;justify-content:center;flex-wrap:wrap;background:white;border-top:1px solid #ddd}
+#classSeatsPromo{
+  position:fixed;
+  bottom:10px;
+  right:10px;
+  background:rgba(255,255,255,.9);
+  border:1px solid #d1d5db;
+  border-radius:10px;
+  padding:8px 12px;
+  font-size:11px;
+  color:#6b7280;
+  box-shadow:0 2px 6px rgba(0,0,0,.08);
+  z-index:5000;
+}
+
+#classSeatsPromo a{
+  color:#4f46e5;
+  text-decoration:none;
+  font-weight:bold;
+}
+
+#classSeatsPromo a:hover{
+  text-decoration:underline;
+}
+
+@media print{
+  #classSeatsPromo{
+    display:none;
+  }
+}
+ #legend{display:flex;gap:12px;padding:12px;justify-content:center;flex-wrap:wrap;background:white;border-top:1px solid #ddd}
 .guideV,.guideH{position:absolute;background:#ef4444;pointer-events:none;display:none;z-index:999}
 .guideV{width:2px;height:100%;left:50%;top:0}.guideH{height:2px;width:100%;top:50%;left:0}
 @media print{
@@ -92,6 +121,14 @@ input[type=color]{padding:3px;width:42px;height:34px}
 </div>
 
 <div id="legend"></div>
+
+ <div id="classSeatsPromo">
+  Built by Mr. Fish •
+  <a href="https://classseats.app" target="_blank">
+    Try ClassSeats
+  </a>
+  for seating charts, attendance, and student grouping.
+</div>
 
 <script>
 const room=document.getElementById("room"),grid=25;
