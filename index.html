@@ -33,7 +33,7 @@ body{background:white}
 </style>
 </head>
 <body>
-<h1>Room Layout v 2.2</h1>
+<h1>Room Layout v 2.3</h1>
 
 <div id="toolbar">
 <button onclick="addWall()">Wall</button>
@@ -123,23 +123,61 @@ function addItem(type,x=80,y=80,r=0,w=null,h=null,label=null,color=null){
  item.style.left=x+"px";item.style.top=y+"px";item.style.width=(w||t.w)+"px";item.style.height=(h||t.h)+"px";item.style.background=color||t.color;item.style.color=t.text||"white";item.style.transform=`rotate(${r}deg)`;
  if(type==="trash")item.style.borderRadius="50%";
  item.innerHTML=`<div class="controls"><button class="mini rot">↻</button><button class="mini dup">⧉</button><button class="mini dim">⋮</button><button class="mini del">×</button></div><span>${label||t.label}</span><div class="resize"></div><div class="length"></div>`;
- item.querySelector(".rot").onclick=e=>{e.stopPropagation();let nr=(+item.dataset.rotation+15)%360;item.dataset.rotation=nr;item.style.transform=`rotate(${nr}deg)`};
+ item.querySelector(".rot").onclick=e=>{e.stopPropagation();let nr=(+item.dataset.rotation+45)%360;item.dataset.rotation=nr;item.style.transform=`rotate(${nr}deg)`};
  item.querySelector(".dup").onclick=e=>{e.stopPropagation();addItem(type,parseInt(item.style.left)+25,parseInt(item.style.top)+25,+item.dataset.rotation,item.offsetWidth,item.offsetHeight,item.dataset.label,item.dataset.color)};
  item.querySelector(".del").onclick=e=>{e.stopPropagation();item.remove();updateLegend()};
  item.querySelector(".dim").onclick=e=>{e.stopPropagation();editDims(item)};
  makeDraggable(item);makeResizable(item);room.appendChild(item);updateLength(item);updateLegend();
 }
+function visualOffset(el){
+ const w=el.offsetWidth, h=el.offsetHeight;
+ const r=((+el.dataset.rotation||0)%360)*Math.PI/180;
+ const bw=Math.abs(w*Math.cos(r))+Math.abs(h*Math.sin(r));
+ const bh=Math.abs(w*Math.sin(r))+Math.abs(h*Math.cos(r));
+ return {
+  ox:(w-bw)/2,
+  oy:(h-bh)/2
+ };
+}
+
 function makeDraggable(el){
- let sx,sy,sl,st,drag=false;
+ let sx,sy,startVisualX,startVisualY,drag=false;
+
  el.addEventListener("pointerdown",e=>{
   if(e.target.tagName==="BUTTON"||e.target.className==="resize")return;
   drag=true;
-   document.querySelectorAll(".active").forEach(e=>e.classList.remove("active"));
-el.classList.add("active");
-   el.setPointerCapture(e.pointerId);sx=e.clientX;sy=e.clientY;sl=parseInt(el.style.left);st=parseInt(el.style.top);e.preventDefault();
+  document.querySelectorAll(".active").forEach(e=>e.classList.remove("active"));
+  el.classList.add("active");
+
+  el.setPointerCapture(e.pointerId);
+  sx=e.clientX;
+  sy=e.clientY;
+
+  const off=visualOffset(el);
+  startVisualX=parseFloat(el.style.left)+off.ox;
+  startVisualY=parseFloat(el.style.top)+off.oy;
+
+  e.preventDefault();
  });
- el.addEventListener("pointermove",e=>{if(!drag)return;let x=snap(sl+e.clientX-sx),y=snap(st+e.clientY-sy);el.style.left=x+"px";el.style.top=y+"px";showGuides(x,y)});
- el.addEventListener("pointerup",e=>{drag=false;hideGuides();try{el.releasePointerCapture(e.pointerId)}catch{}});
+
+ el.addEventListener("pointermove",e=>{
+  if(!drag)return;
+
+  const off=visualOffset(el);
+  const visualX=snap(startVisualX+e.clientX-sx);
+  const visualY=snap(startVisualY+e.clientY-sy);
+
+  el.style.left=(visualX-off.ox)+"px";
+  el.style.top=(visualY-off.oy)+"px";
+
+  showGuides(visualX,visualY);
+ });
+
+ el.addEventListener("pointerup",e=>{
+  drag=false;
+  hideGuides();
+  try{el.releasePointerCapture(e.pointerId)}catch{}
+ });
 }
 function makeResizable(el){
  const h=el.querySelector(".resize");let sx,sy,sw,sh,res=false;
