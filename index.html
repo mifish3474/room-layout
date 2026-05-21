@@ -33,9 +33,13 @@ body{background:white}
 </style>
 </head>
 <body>
-<h1>Room Layout v 2.3</h1>
+<h1 id="titleDisplay">Room 207 Layout</h1>
 
 <div id="toolbar">
+  <input id="mapTitle" placeholder="Room title" value="Room 207 Layout" onchange="updateTitle()">
+<button onclick="downloadLayout()">Download Save File</button>
+<input id="fileLoader" type="file" accept=".json" style="display:none" onchange="loadFromFile(event)">
+<button onclick="document.getElementById('fileLoader').click()">Load Save File</button>
 <button onclick="addWall()">Wall</button>
 <button onclick="addItem('desk')">Student Desk</button>
 <button onclick="addItem('teacher')">Teacher Desk</button>
@@ -195,11 +199,64 @@ function updateLegend(){
  const unique=[];used.forEach(u=>{if(!unique.find(x=>x.label===u.label&&x.color===u.color))unique.push(u)});
  document.getElementById("legend").innerHTML=unique.map(u=>`<span><span class="swatch" style="background:${u.color}"></span>${u.label}</span>`).join("");
 }
-function saveLayout(){
- const data=[...document.querySelectorAll("[data-kind]")].map(el=>el.dataset.kind==="wall"?{kind:"wall",x1:+el.dataset.x1,y1:+el.dataset.y1,x2:+el.dataset.x2,y2:+el.dataset.y2}:{kind:"item",type:el.dataset.type,x:parseInt(el.style.left),y:parseInt(el.style.top),rotation:+el.dataset.rotation,w:el.offsetWidth,h:el.offsetHeight,label:el.dataset.label,color:el.dataset.color});
- localStorage.setItem("roomLayoutV2",JSON.stringify(data));alert("Saved");
+function updateTitle(){
+ const title=document.getElementById("mapTitle").value || "Room Layout";
+ document.getElementById("titleDisplay").textContent=title;
 }
-function loadLayout(){[...room.querySelectorAll("[data-kind]")].forEach(e=>e.remove());JSON.parse(localStorage.getItem("roomLayoutV2")||"[]").forEach(i=>i.kind==="wall"?addWall(i.x1,i.y1,i.x2,i.y2):addItem(i.type,i.x,i.y,i.rotation,i.w,i.h,i.label,i.color));updateLegend()}
+
+function getLayoutData(){
+ return {
+  title: document.getElementById("mapTitle").value || "Room Layout",
+  items: [...document.querySelectorAll("[data-kind]")].map(el =>
+   el.dataset.kind==="wall"
+   ? {kind:"wall",x1:+el.dataset.x1,y1:+el.dataset.y1,x2:+el.dataset.x2,y2:+el.dataset.y2}
+   : {kind:"item",type:el.dataset.type,x:parseInt(el.style.left),y:parseInt(el.style.top),rotation:+el.dataset.rotation,w:el.offsetWidth,h:el.offsetHeight,label:el.dataset.label,color:el.dataset.color}
+  )
+ };
+}
+
+function downloadLayout(){
+ const data=JSON.stringify(getLayoutData(),null,2);
+ const blob=new Blob([data],{type:"application/json"});
+ const a=document.createElement("a");
+ a.href=URL.createObjectURL(blob);
+ a.download=(document.getElementById("mapTitle").value || "room-layout").replaceAll(" ","-")+".json";
+ a.click();
+ URL.revokeObjectURL(a.href);
+}
+
+function loadFromFile(event){
+ const file=event.target.files[0];
+ if(!file)return;
+ const reader=new FileReader();
+ reader.onload=e=>{
+  const data=JSON.parse(e.target.result);
+  document.getElementById("mapTitle").value=data.title || "Room Layout";
+  updateTitle();
+  loadLayoutData(data.items || []);
+ };
+ reader.readAsText(file);
+}
+
+function loadLayoutData(data){
+ [...room.querySelectorAll("[data-kind]")].forEach(e=>e.remove());
+ data.forEach(i=>i.kind==="wall"?addWall(i.x1,i.y1,i.x2,i.y2):addItem(i.type,i.x,i.y,i.rotation,i.w,i.h,i.label,i.color));
+ updateLegend();
+}
+function saveLayout(){
+ localStorage.setItem("roomLayoutV2",JSON.stringify(getLayoutData()));
+ alert("Saved");
+}
+function loadLayout(){
+ const saved = JSON.parse(localStorage.getItem("roomLayoutV2") || "{}");
+
+ document.getElementById("mapTitle").value =
+   saved.title || "Room Layout";
+
+ updateTitle();
+
+ loadLayoutData(saved.items || []);
+}
 let measurementsVisible = true;
 
 function toggleMeasurements(){
