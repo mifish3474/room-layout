@@ -248,14 +248,22 @@ function saveLayout(){
  alert("Saved");
 }
 function loadLayout(){
- const saved = JSON.parse(localStorage.getItem("roomLayoutV2") || "{}");
+ const raw = JSON.parse(localStorage.getItem("roomLayoutV2") || "[]");
 
- document.getElementById("mapTitle").value =
-   saved.title || "Room Layout";
+ if(Array.isArray(raw)){
+   // old save format
+   document.getElementById("mapTitle").value = "Room Layout";
+   updateTitle();
+   loadLayoutData(raw);
+ } else {
+   // new save format
+   document.getElementById("mapTitle").value =
+     raw.title || "Room Layout";
 
- updateTitle();
+   updateTitle();
 
- loadLayoutData(saved.items || []);
+   loadLayoutData(raw.items || []);
+ }
 }
 let measurementsVisible = true;
 
