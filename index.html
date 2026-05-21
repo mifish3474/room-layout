@@ -2,31 +2,23 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Room 207 Layout</title>
+<title>Room Layout</title>
 <style>
 body{margin:0;font-family:Arial;background:#f4f4f4}
 h1{text-align:center;margin:10px}
-#toolbar{display:flex;gap:8px;padding:10px;justify-content:center;flex-wrap:wrap;background:white;border-bottom:1px solid #ccc}
-button{padding:8px 10px;cursor:pointer;border:1px solid #888;background:white;border-radius:6px}
+#toolbar,#legend{display:flex;gap:8px;padding:10px;justify-content:center;flex-wrap:wrap;background:white;border-bottom:1px solid #ccc}
+button,input{padding:7px;border:1px solid #888;border-radius:6px}
+button{cursor:pointer;background:white}
 #room{width:1200px;height:750px;margin:20px auto;position:relative;background:white;border:4px solid black;
 background-image:linear-gradient(to right,#ddd 1px,transparent 1px),linear-gradient(to bottom,#ddd 1px,transparent 1px);
 background-size:25px 25px}
 .item{position:absolute;user-select:none;cursor:grab;border:2px solid #333;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;text-align:center;transform-origin:center}
-.item:active{cursor:grabbing}
-.desk{width:80px;height:45px;background:#8b5a2b;color:white}
-.teacher{width:140px;height:60px;background:#1e5eff;color:white}
-.table{width:120px;height:50px;background:#2aa84a;color:white}
-.cabinet{width:130px;height:40px;background:#444;color:white}
-.trash{width:45px;height:45px;background:#f0c400;color:black;border-radius:50%}
-.wall{width:180px;height:14px;background:black;color:white}
-.controls{position:absolute;top:-26px;right:0;display:flex;gap:3px}
-.mini{font-size:10px;padding:2px 5px;background:white;color:black}
-@media print{
-  #toolbar,.controls{display:none!important}
-  body{background:white}
-  #room{margin:0;print-color-adjust:exact;-webkit-print-color-adjust:exact}
-  .item{print-color-adjust:exact;-webkit-print-color-adjust:exact}
-}
+.desk{background:#8b5a2b;color:white}.teacher{background:#1e5eff;color:white}.table{background:#2aa84a;color:white}.cabinet{background:#444;color:white}.trash{background:#f0c400;color:black;border-radius:50%}.wall{background:black;color:white}
+.controls{position:absolute;top:-28px;right:0;display:flex;gap:3px}.mini{font-size:11px;padding:2px 5px;background:white;color:black}
+.resize{position:absolute;right:-8px;bottom:-8px;width:14px;height:14px;background:red;border-radius:50%;cursor:nwse-resize}
+.length{position:absolute;bottom:-24px;left:0;background:white;border:1px solid #999;padding:2px 5px;font-size:11px}
+.swatch{width:18px;height:18px;border:1px solid #333;display:inline-block;vertical-align:middle;margin-right:4px}
+@media print{#toolbar,.controls,.resize{display:none!important}body{background:white}#room,.item{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
 </style>
 </head>
 <body>
@@ -40,6 +32,9 @@ background-size:25px 25px}
 <button onclick="addItem('table')">Rolling Table</button>
 <button onclick="addItem('cabinet')">Cabinet</button>
 <button onclick="addItem('trash')">Trash Can</button>
+<input id="customName" placeholder="Custom name">
+<input id="customColor" type="color" value="#cc66ff">
+<button onclick="createCustom()">Add Custom</button>
 <button onclick="saveLayout()">Save</button>
 <button onclick="loadLayout()">Load</button>
 <button onclick="clearLayout()">Clear</button>
@@ -47,87 +42,95 @@ background-size:25px 25px}
 </div>
 
 <div id="room"></div>
+<div id="legend"></div>
 
 <script>
 const room=document.getElementById("room");
-const labels={wall:"Wall",desk:"Desk",teacher:"Teacher",table:"Table",cabinet:"Cabinet",trash:"Trash"};
+const grid=25;
+let types={
+ wall:{label:"Wall",w:200,h:14,color:"black",text:"white"},
+ desk:{label:"Student Desk",w:80,h:45,color:"#8b5a2b",text:"white"},
+ teacher:{label:"Teacher Desk",w:140,h:60,color:"#1e5eff",text:"white"},
+ table:{label:"Rolling Table",w:120,h:50,color:"#2aa84a",text:"white"},
+ cabinet:{label:"Cabinet",w:130,h:40,color:"#444",text:"white"},
+ trash:{label:"Trash Can",w:45,h:45,color:"#f0c400",text:"black"}
+};
 
-function addItem(type,x=80,y=80,r=0){
-  const item=document.createElement("div");
-  item.className="item "+type;
-  item.dataset.type=type;
-  item.dataset.rotation=r;
-  item.style.left=x+"px";
-  item.style.top=y+"px";
-  item.style.transform=`rotate(${r}deg)`;
-  item.innerHTML=`<div class="controls"><button class="mini rot">↻</button><button class="mini del">×</button></div><span>${labels[type]}</span>`;
-
-  item.querySelector(".rot").onclick=e=>{
-    e.stopPropagation();
-    let nr=(Number(item.dataset.rotation)+15)%360;
-    item.dataset.rotation=nr;
-    item.style.transform=`rotate(${nr}deg)`;
-  };
-
-  item.querySelector(".del").onclick=e=>{
-    e.stopPropagation();
-    item.remove();
-  };
-
-  makeDraggable(item);
-  room.appendChild(item);
+function addItem(type,x=80,y=80,r=0,w=null,h=null,label=null,color=null){
+ const t=types[type]||types.custom;
+ const item=document.createElement("div");
+ item.className="item "+type;
+ item.dataset.type=type; item.dataset.rotation=r;
+ item.dataset.label=label||t.label; item.dataset.color=color||t.color;
+ item.style.left=x+"px"; item.style.top=y+"px";
+ item.style.width=(w||t.w)+"px"; item.style.height=(h||t.h)+"px";
+ item.style.background=color||t.color; item.style.color=t.text||"white";
+ item.style.transform=`rotate(${r}deg)`;
+ if(type==="trash") item.style.borderRadius="50%";
+ item.innerHTML=`<div class="controls"><button class="mini rot">↻</button><button class="mini dim">⋮</button><button class="mini del">×</button></div><span>${label||t.label}</span><div class="resize"></div><div class="length"></div>`;
+ item.querySelector(".rot").onclick=e=>{e.stopPropagation();let nr=(+item.dataset.rotation+15)%360;item.dataset.rotation=nr;item.style.transform=`rotate(${nr}deg)`};
+ item.querySelector(".del").onclick=e=>{e.stopPropagation();item.remove();updateLegend()};
+ item.querySelector(".dim").onclick=e=>{e.stopPropagation();editDims(item)};
+ makeDraggable(item); makeResizable(item); room.appendChild(item); updateLength(item); updateLegend();
 }
 
 function makeDraggable(el){
-  let startX,startY,startLeft,startTop,dragging=false;
+ let sx,sy,sl,st,drag=false;
+ el.addEventListener("pointerdown",e=>{
+  if(e.target.tagName==="BUTTON"||e.target.className==="resize")return;
+  drag=true;el.setPointerCapture(e.pointerId);sx=e.clientX;sy=e.clientY;sl=parseInt(el.style.left);st=parseInt(el.style.top);e.preventDefault();
+ });
+ el.addEventListener("pointermove",e=>{if(!drag)return;el.style.left=Math.round((sl+e.clientX-sx)/grid)*grid+"px";el.style.top=Math.round((st+e.clientY-sy)/grid)*grid+"px"});
+ el.addEventListener("pointerup",e=>{drag=false;try{el.releasePointerCapture(e.pointerId)}catch{}});
+}
 
-  el.addEventListener("pointerdown",e=>{
-    if(e.target.tagName==="BUTTON")return;
-    dragging=true;
-    el.setPointerCapture(e.pointerId);
-    startX=e.clientX;
-    startY=e.clientY;
-    startLeft=parseInt(el.style.left)||0;
-    startTop=parseInt(el.style.top)||0;
-    e.preventDefault();
-  });
+function makeResizable(el){
+ const handle=el.querySelector(".resize");let sx,sy,sw,sh,res=false;
+ handle.addEventListener("pointerdown",e=>{res=true;sx=e.clientX;sy=e.clientY;sw=el.offsetWidth;sh=el.offsetHeight;handle.setPointerCapture(e.pointerId);e.stopPropagation()});
+ handle.addEventListener("pointermove",e=>{
+  if(!res)return;
+  el.style.width=Math.max(grid,Math.round((sw+e.clientX-sx)/grid)*grid)+"px";
+  el.style.height=Math.max(grid,Math.round((sh+e.clientY-sy)/grid)*grid)+"px";
+  updateLength(el);
+ });
+ handle.addEventListener("pointerup",e=>{res=false;try{handle.releasePointerCapture(e.pointerId)}catch{}});
+}
 
-  el.addEventListener("pointermove",e=>{
-    if(!dragging)return;
-    let x=startLeft+(e.clientX-startX);
-    let y=startTop+(e.clientY-startY);
-    x=Math.round(x/25)*25;
-    y=Math.round(y/25)*25;
-    el.style.left=x+"px";
-    el.style.top=y+"px";
-  });
+function updateLength(el){
+ const box=el.querySelector(".length");
+ const feet=Math.round(el.offsetWidth/grid);
+ box.textContent=el.dataset.type==="wall" ? `${feet} ft` : `${Math.round(el.offsetWidth/grid)}×${Math.round(el.offsetHeight/grid)} ft`;
+}
 
-  el.addEventListener("pointerup",e=>{
-    dragging=false;
-    try{el.releasePointerCapture(e.pointerId)}catch{}
-  });
+function editDims(el){
+ const w=prompt("Width in feet:",Math.round(el.offsetWidth/grid));
+ if(!w)return;
+ const h=prompt("Height in feet:",Math.round(el.offsetHeight/grid));
+ if(!h)return;
+ el.style.width=(+w*grid)+"px"; el.style.height=(+h*grid)+"px"; updateLength(el);
+}
+
+function createCustom(){
+ const name=document.getElementById("customName").value.trim();
+ const color=document.getElementById("customColor").value;
+ if(!name){alert("Name the custom item first.");return}
+ const key="custom_"+Date.now();
+ types[key]={label:name,w:100,h:50,color:color,text:"white"};
+ addItem(key,80,80,0,100,50,name,color);
+}
+
+function updateLegend(){
+ const used=[...document.querySelectorAll(".item")].map(i=>({label:i.dataset.label,color:i.dataset.color}));
+ const unique=[]; used.forEach(u=>{if(!unique.find(x=>x.label===u.label&&x.color===u.color))unique.push(u)});
+ document.getElementById("legend").innerHTML=unique.map(u=>`<span><span class="swatch" style="background:${u.color}"></span>${u.label}</span>`).join("");
 }
 
 function saveLayout(){
-  const data=[...document.querySelectorAll(".item")].map(el=>({
-    type:el.dataset.type,
-    x:parseInt(el.style.left),
-    y:parseInt(el.style.top),
-    rotation:Number(el.dataset.rotation||0)
-  }));
-  localStorage.setItem("room207layout",JSON.stringify(data));
-  alert("Saved");
+ const data=[...document.querySelectorAll(".item")].map(el=>({type:el.dataset.type,x:parseInt(el.style.left),y:parseInt(el.style.top),rotation:+el.dataset.rotation,w:el.offsetWidth,h:el.offsetHeight,label:el.dataset.label,color:el.dataset.color}));
+ localStorage.setItem("roomLayout",JSON.stringify(data));alert("Saved");
 }
-
-function loadLayout(){
-  room.innerHTML="";
-  JSON.parse(localStorage.getItem("room207layout")||"[]").forEach(i=>addItem(i.type,i.x,i.y,i.rotation));
-}
-
-function clearLayout(){
-  if(confirm("Clear layout?"))room.innerHTML="";
-}
+function loadLayout(){room.innerHTML="";JSON.parse(localStorage.getItem("roomLayout")||"[]").forEach(i=>addItem(i.type,i.x,i.y,i.rotation,i.w,i.h,i.label,i.color));}
+function clearLayout(){if(confirm("Clear layout?")){room.innerHTML="";updateLegend();}}
 </script>
-
 </body>
 </html>
