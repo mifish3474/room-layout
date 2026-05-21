@@ -21,6 +21,9 @@ background-image:linear-gradient(to right,#ddd 1px,transparent 1px),linear-gradi
 .swatch{width:18px;height:18px;border:1px solid #333;display:inline-block;vertical-align:middle;margin-right:4px}
 .guideV,.guideH{position:absolute;background:red;pointer-events:none;display:none;z-index:999}
 .guideV{width:2px;height:100%;left:50%;top:0}.guideH{height:2px;width:100%;top:50%;left:0}
+  .controls,.resize,.length{display:none}
+.active .controls,.active .resize,.active .length{display:flex}
+.active .length{display:block}
 @media print{
 #toolbar,.controls,.resize,.handle,.guideV,.guideH{display:none!important}
 body{background:white}
@@ -30,7 +33,7 @@ body{background:white}
 </style>
 </head>
 <body>
-<h1>Room Layout v 2.1</h1>
+<h1>Room Layout v 2.2</h1>
 
 <div id="toolbar">
 <button onclick="addWall()">Wall</button>
@@ -60,11 +63,11 @@ body{background:white}
 const room=document.getElementById("room"),grid=25;
 const guideV=document.querySelector(".guideV"),guideH=document.querySelector(".guideH");
 let types={
- desk:{label:"Student Desk",w:80,h:45,color:"#8b5a2b",text:"white"},
- teacher:{label:"Teacher Desk",w:140,h:60,color:"#1e5eff",text:"white"},
- table:{label:"Rolling Table",w:120,h:50,color:"#2aa84a",text:"white"},
- cabinet:{label:"Cabinet",w:130,h:40,color:"#444",text:"white"},
- trash:{label:"Trash Can",w:45,h:45,color:"#f0c400",text:"black"},
+ desk:{label:"Student Desk",w:100,h:50,color:"#8b5a2b",text:"white"},
+teacher:{label:"Teacher Desk",w:50,h:125,color:"#1e5eff",text:"white"},
+table:{label:"Rolling Table",w:125,h:50,color:"#2aa84a",text:"white"},
+cabinet:{label:"Cabinet",w:125,h:50,color:"#444",text:"white"},
+trash:{label:"Trash Can",w:50,h:50,color:"#f0c400",text:"black"},
  textbox:{label:"Text Box",w:150,h:50,color:"#fff",text:"black"}
 };
 function snap(n){return Math.round(n/grid)*grid}
@@ -90,7 +93,10 @@ function dragWall(w){
  let sx,sy,x1,y1,x2,y2,drag=false;
  w.addEventListener("pointerdown",e=>{
   if(e.target.tagName==="BUTTON"||e.target.classList.contains("handle"))return;
-  drag=true;w.setPointerCapture(e.pointerId);sx=e.clientX;sy=e.clientY;
+  drag=true;
+   document.querySelectorAll(".active").forEach(e=>e.classList.remove("active"));
+w.classList.add("active");
+   w.setPointerCapture(e.pointerId);sx=e.clientX;sy=e.clientY;
   x1=+w.dataset.x1;y1=+w.dataset.y1;x2=+w.dataset.x2;y2=+w.dataset.y2;e.preventDefault();
  });
  w.addEventListener("pointermove",e=>{
@@ -127,7 +133,10 @@ function makeDraggable(el){
  let sx,sy,sl,st,drag=false;
  el.addEventListener("pointerdown",e=>{
   if(e.target.tagName==="BUTTON"||e.target.className==="resize")return;
-  drag=true;el.setPointerCapture(e.pointerId);sx=e.clientX;sy=e.clientY;sl=parseInt(el.style.left);st=parseInt(el.style.top);e.preventDefault();
+  drag=true;
+   document.querySelectorAll(".active").forEach(e=>e.classList.remove("active"));
+el.classList.add("active");
+   el.setPointerCapture(e.pointerId);sx=e.clientX;sy=e.clientY;sl=parseInt(el.style.left);st=parseInt(el.style.top);e.preventDefault();
  });
  el.addEventListener("pointermove",e=>{if(!drag)return;let x=snap(sl+e.clientX-sx),y=snap(st+e.clientY-sy);el.style.left=x+"px";el.style.top=y+"px";showGuides(x,y)});
  el.addEventListener("pointerup",e=>{drag=false;hideGuides();try{el.releasePointerCapture(e.pointerId)}catch{}});
