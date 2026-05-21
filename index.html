@@ -48,12 +48,9 @@ input[type=color]{padding:3px;width:42px;height:34px}
   </div>
 
   <div class="group">
-    <span class="label">File</span>
-    <button onclick="saveLayout()">Save</button>
-    <button onclick="loadLayout()">Load</button>
-    <button onclick="downloadLayout()">Download</button>
+    <button onclick="downloadLayout()">Save</button>
     <input id="fileLoader" type="file" accept=".json" style="display:none" onchange="loadFromFile(event)">
-    <button onclick="document.getElementById('fileLoader').click()">Upload</button>
+    <button onclick="document.getElementById('fileLoader').click()">Load</button>
   </div>
 
   <div class="group">
@@ -216,12 +213,8 @@ function updateTitle(){const title=document.getElementById("mapTitle").value||"R
 function getLayoutData(){
  return{title:document.getElementById("mapTitle").value||"Room Layout",items:[...document.querySelectorAll("[data-kind]")].map(el=>el.dataset.kind==="wall"?{kind:"wall",x1:+el.dataset.x1,y1:+el.dataset.y1,x2:+el.dataset.x2,y2:+el.dataset.y2}:{kind:"item",type:el.dataset.type,x:parseInt(el.style.left),y:parseInt(el.style.top),rotation:+el.dataset.rotation,w:el.offsetWidth,h:el.offsetHeight,label:el.dataset.label,color:el.dataset.color})};
 }
-function saveLayout(){localStorage.setItem("roomLayoutV2",JSON.stringify(getLayoutData()));alert("Saved")}
-function loadLayout(){
- const raw=JSON.parse(localStorage.getItem("roomLayoutV2")||"[]");
- if(Array.isArray(raw)){document.getElementById("mapTitle").value="Room Layout";updateTitle();loadLayoutData(raw)}
- else{document.getElementById("mapTitle").value=raw.title||"Room Layout";updateTitle();loadLayoutData(raw.items||[])}
-}
+
+
 function loadLayoutData(data){[...room.querySelectorAll("[data-kind]")].forEach(e=>e.remove());data.forEach(i=>i.kind==="wall"?addWall(i.x1,i.y1,i.x2,i.y2):addItem(i.type,i.x,i.y,i.rotation,i.w,i.h,i.label,i.color));updateLegend()}
 function downloadLayout(){
  const data=JSON.stringify(getLayoutData(),null,2),blob=new Blob([data],{type:"application/json"}),a=document.createElement("a");
