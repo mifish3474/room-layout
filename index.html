@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <title>Room Layout</title>
 <style>
 body{margin:0;font-family:Arial;background:#f4f4f4}
@@ -9,40 +9,37 @@ h1{text-align:center;margin:10px}
 #toolbar,#legend{display:flex;gap:8px;padding:10px;justify-content:center;flex-wrap:wrap;background:white;border-bottom:1px solid #ccc}
 button,input{padding:7px;border:1px solid #888;border-radius:6px}
 button{cursor:pointer;background:white}
-#room{width:1200px;height:1000px;margin:20px auto;position:relative;background:white;border:4px solid black;
-background-image:linear-gradient(to right,#ddd 1px,transparent 1px),linear-gradient(to bottom,#ddd 1px,transparent 1px);
-background-size:25px 25px}
+#room{width:1200px;height:1000px;margin:20px auto;position:relative;background:white;border:4px solid black;overflow:hidden;
+background-image:linear-gradient(to right,#ddd 1px,transparent 1px),linear-gradient(to bottom,#ddd 1px,transparent 1px);background-size:25px 25px}
 .item{position:absolute;user-select:none;cursor:grab;border:2px solid #333;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;text-align:center;transform-origin:center}
-.desk{background:#8b5a2b;color:white}.teacher{background:#1e5eff;color:white}.table{background:#2aa84a;color:white}.cabinet{background:#444;color:white}.trash{background:#f0c400;color:black;border-radius:50%}.wall{background:black;color:white}
-.controls{position:absolute;top:-28px;right:0;display:flex;gap:3px}.mini{font-size:11px;padding:2px 5px;background:white;color:black}
+.wallLine{position:absolute;height:10px;background:black;transform-origin:left center;cursor:grab}
+.handle{position:absolute;width:14px;height:14px;background:red;border-radius:50%;top:-2px;cursor:pointer}
+.h1{left:-7px}.h2{right:-7px}
+.controls{position:absolute;top:-30px;right:0;display:flex;gap:3px}.mini{font-size:11px;padding:2px 5px;background:white;color:black}
 .resize{position:absolute;right:-8px;bottom:-8px;width:14px;height:14px;background:red;border-radius:50%;cursor:nwse-resize}
-.length{position:absolute;bottom:-28px;left:0;background:white;border:1px solid #999;padding:3px 8px;font-size:12px;color:black;min-width:45px;height:16px;line-height:16px;z-index:20;white-space:nowrap}
+.length{position:absolute;bottom:-30px;left:0;background:white;border:1px solid #999;padding:3px 8px;font-size:12px;color:black;min-width:45px;z-index:20;white-space:nowrap}
 .swatch{width:18px;height:18px;border:1px solid #333;display:inline-block;vertical-align:middle;margin-right:4px}
+.guideV,.guideH{position:absolute;background:red;pointer-events:none;display:none;z-index:999}
+.guideV{width:2px;height:100%;left:50%;top:0}.guideH{height:2px;width:100%;top:50%;left:0}
 @media print{
-  #toolbar,.controls,.resize{display:none!important}
-  body{background:white}
-  #room,.item,#legend,.swatch{
-    print-color-adjust:exact;
-    -webkit-print-color-adjust:exact;
-  }
-  .swatch{
-    border:2px solid black!important;
-  }
+#toolbar,.controls,.resize,.handle,.guideV,.guideH{display:none!important}
+body{background:white}
+#room,.item,.wallLine,#legend,.swatch{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+.swatch{border:2px solid black!important}
 }
 </style>
 </head>
 <body>
-
-<h1>Room Layout v 1.9</h1>
+<h1>Room Layout v 2.0</h1>
 
 <div id="toolbar">
-<button onclick="addItem('wall')">Wall</button>
+<button onclick="addWall()">Wall</button>
 <button onclick="addItem('desk')">Student Desk</button>
 <button onclick="addItem('teacher')">Teacher Desk</button>
 <button onclick="addItem('table')">Rolling Table</button>
 <button onclick="addItem('cabinet')">Cabinet</button>
 <button onclick="addItem('trash')">Trash Can</button>
- <button onclick="addTextBox()">Text Box</button>
+<button onclick="addTextBox()">Text Box</button>
 <input id="customName" placeholder="Custom name">
 <input id="customColor" type="color" value="#cc66ff">
 <button onclick="createCustom()">Add Custom</button>
@@ -52,126 +49,110 @@ background-size:25px 25px}
 <button onclick="window.print()">Print</button>
 </div>
 
-<div id="room"></div>
+<div id="room">
+  <div class="guideV"></div>
+  <div class="guideH"></div>
+</div>
 <div id="legend"></div>
 
 <script>
-const room=document.getElementById("room");
-const grid=25;
+const room=document.getElementById("room"),grid=25;
+const guideV=document.querySelector(".guideV"),guideH=document.querySelector(".guideH");
 let types={
- wall:{label:"Wall",w:200,h:14,color:"black",text:"white"},
  desk:{label:"Student Desk",w:80,h:45,color:"#8b5a2b",text:"white"},
  teacher:{label:"Teacher Desk",w:140,h:60,color:"#1e5eff",text:"white"},
  table:{label:"Rolling Table",w:120,h:50,color:"#2aa84a",text:"white"},
  cabinet:{label:"Cabinet",w:130,h:40,color:"#444",text:"white"},
- trash:{label:"Trash Can",w:45,h:45,color:"#f0c400",text:"black"}
+ trash:{label:"Trash Can",w:45,h:45,color:"#f0c400",text:"black"},
+ textbox:{label:"Text Box",w:150,h:50,color:"#fff",text:"black"}
 };
+function snap(n){return Math.round(n/grid)*grid}
+function showGuides(x,y){guideV.style.display=Math.abs(x-600)<8?"block":"none";guideH.style.display=Math.abs(y-500)<8?"block":"none"}
+function hideGuides(){guideV.style.display="none";guideH.style.display="none"}
 
-function addItem(type,x=80,y=80,r=0,w=null,h=null,label=null,color=null){
- const t=types[type]||types.custom;
- const item=document.createElement("div");
- item.className="item "+type;
- item.dataset.type=type; item.dataset.rotation=r;
- item.dataset.label=label||t.label; item.dataset.color=color||t.color;
- item.style.left=x+"px"; item.style.top=y+"px";
- item.style.width=(w||t.w)+"px"; item.style.height=(h||t.h)+"px";
- item.style.background=color||t.color; item.style.color=t.text||"white";
- item.style.transform=`rotate(${r}deg)`;
- if(type==="trash") item.style.borderRadius="50%";
- item.innerHTML=`<div class="controls"><button class="mini rot">↻</button><button class="mini dup">⧉</button><button class="mini dim">⋮</button><button class="mini del">×</button></div><span>${label||t.label}</span><div class="resize"></div><div class="length"></div>`;
- item.querySelector(".rot").onclick=e=>{e.stopPropagation();let nr=(+item.dataset.rotation+15)%360;item.dataset.rotation=nr;item.style.transform=`rotate(${nr}deg)`};
- item.querySelector(".dup").onclick=e=>{
- e.stopPropagation();
- addItem(
-  item.dataset.type,
-  parseInt(item.style.left)+grid,
-  parseInt(item.style.top)+grid,
-  +item.dataset.rotation,
-  item.offsetWidth,
-  item.offsetHeight,
-  item.dataset.label,
-  item.dataset.color
- );
-};
- item.querySelector(".del").onclick=e=>{e.stopPropagation();item.remove();updateLegend()};
- item.querySelector(".dim").onclick=e=>{e.stopPropagation();editDims(item)};
- makeDraggable(item); makeResizable(item); room.appendChild(item); updateLength(item); updateLegend();
+function addWall(x1=50,y1=50,x2=300,y2=50){
+ const w=document.createElement("div");w.className="wallLine";w.dataset.kind="wall";
+ w.innerHTML=`<div class="controls"><button class="mini dup">⧉</button><button class="mini del">×</button></div><div class="handle h1"></div><div class="handle h2"></div><div class="length"></div>`;
+ room.appendChild(w);
+ setWall(w,x1,y1,x2,y2);
+ w.querySelector(".del").onclick=e=>{e.stopPropagation();w.remove();updateLegend()};
+ w.querySelector(".dup").onclick=e=>{e.stopPropagation();addWall(x1+25,y1+25,x2+25,y2+25)};
+ dragWall(w); dragHandle(w,"h1"); dragHandle(w,"h2"); updateLegend();
+}
+function setWall(w,x1,y1,x2,y2){
+ w.dataset.x1=x1;w.dataset.y1=y1;w.dataset.x2=x2;w.dataset.y2=y2;
+ const dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy),ang=Math.atan2(dy,dx)*180/Math.PI;
+ w.style.left=x1+"px";w.style.top=(y1-5)+"px";w.style.width=len+"px";w.style.transform=`rotate(${ang}deg)`;
+ w.querySelector(".length").textContent=Math.round(len/grid)+" ft";
+}
+function dragWall(w){
+ let sx,sy,x1,y1,x2,y2,drag=false;
+ w.addEventListener("pointerdown",e=>{
+  if(e.target.tagName==="BUTTON"||e.target.classList.contains("handle"))return;
+  drag=true;w.setPointerCapture(e.pointerId);sx=e.clientX;sy=e.clientY;
+  x1=+w.dataset.x1;y1=+w.dataset.y1;x2=+w.dataset.x2;y2=+w.dataset.y2;e.preventDefault();
+ });
+ w.addEventListener("pointermove",e=>{
+  if(!drag)return;let dx=snap(e.clientX-sx),dy=snap(e.clientY-sy);
+  setWall(w,x1+dx,y1+dy,x2+dx,y2+dy);showGuides(x1+dx,y1+dy);
+ });
+ w.addEventListener("pointerup",e=>{drag=false;hideGuides();try{w.releasePointerCapture(e.pointerId)}catch{}});
+}
+function dragHandle(w,which){
+ const h=w.querySelector("."+which);let drag=false;
+ h.addEventListener("pointerdown",e=>{drag=true;h.setPointerCapture(e.pointerId);e.stopPropagation()});
+ h.addEventListener("pointermove",e=>{
+  if(!drag)return;
+  const r=room.getBoundingClientRect(),x=snap(e.clientX-r.left),y=snap(e.clientY-r.top);
+  if(which==="h1")setWall(w,x,y,+w.dataset.x2,+w.dataset.y2);else setWall(w,+w.dataset.x1,+w.dataset.y1,x,y);
+  showGuides(x,y);
+ });
+ h.addEventListener("pointerup",e=>{drag=false;hideGuides();try{h.releasePointerCapture(e.pointerId)}catch{}});
 }
 
+function addItem(type,x=80,y=80,r=0,w=null,h=null,label=null,color=null){
+ const t=types[type]||{label:label,w:100,h:50,color:color,text:"white"};
+ const item=document.createElement("div");item.className="item";item.dataset.kind="item";item.dataset.type=type;item.dataset.rotation=r;item.dataset.label=label||t.label;item.dataset.color=color||t.color;
+ item.style.left=x+"px";item.style.top=y+"px";item.style.width=(w||t.w)+"px";item.style.height=(h||t.h)+"px";item.style.background=color||t.color;item.style.color=t.text||"white";item.style.transform=`rotate(${r}deg)`;
+ if(type==="trash")item.style.borderRadius="50%";
+ item.innerHTML=`<div class="controls"><button class="mini rot">↻</button><button class="mini dup">⧉</button><button class="mini dim">⋮</button><button class="mini del">×</button></div><span>${label||t.label}</span><div class="resize"></div><div class="length"></div>`;
+ item.querySelector(".rot").onclick=e=>{e.stopPropagation();let nr=(+item.dataset.rotation+15)%360;item.dataset.rotation=nr;item.style.transform=`rotate(${nr}deg)`};
+ item.querySelector(".dup").onclick=e=>{e.stopPropagation();addItem(type,parseInt(item.style.left)+25,parseInt(item.style.top)+25,+item.dataset.rotation,item.offsetWidth,item.offsetHeight,item.dataset.label,item.dataset.color)};
+ item.querySelector(".del").onclick=e=>{e.stopPropagation();item.remove();updateLegend()};
+ item.querySelector(".dim").onclick=e=>{e.stopPropagation();editDims(item)};
+ makeDraggable(item);makeResizable(item);room.appendChild(item);updateLength(item);updateLegend();
+}
 function makeDraggable(el){
  let sx,sy,sl,st,drag=false;
  el.addEventListener("pointerdown",e=>{
   if(e.target.tagName==="BUTTON"||e.target.className==="resize")return;
   drag=true;el.setPointerCapture(e.pointerId);sx=e.clientX;sy=e.clientY;sl=parseInt(el.style.left);st=parseInt(el.style.top);e.preventDefault();
  });
- el.addEventListener("pointermove",e=>{if(!drag)return;el.style.left=Math.round((sl+e.clientX-sx)/grid)*grid+"px";el.style.top=Math.round((st+e.clientY-sy)/grid)*grid+"px"});
- el.addEventListener("pointerup",e=>{drag=false;try{el.releasePointerCapture(e.pointerId)}catch{}});
+ el.addEventListener("pointermove",e=>{if(!drag)return;let x=snap(sl+e.clientX-sx),y=snap(st+e.clientY-sy);el.style.left=x+"px";el.style.top=y+"px";showGuides(x,y)});
+ el.addEventListener("pointerup",e=>{drag=false;hideGuides();try{el.releasePointerCapture(e.pointerId)}catch{}});
 }
-
 function makeResizable(el){
- const handle=el.querySelector(".resize");let sx,sy,sw,sh,res=false;
- handle.addEventListener("pointerdown",e=>{res=true;sx=e.clientX;sy=e.clientY;sw=el.offsetWidth;sh=el.offsetHeight;handle.setPointerCapture(e.pointerId);e.stopPropagation()});
- handle.addEventListener("pointermove",e=>{
-  if(!res)return;
-  if(el.dataset.type==="wall"){
-  const r = Number(el.dataset.rotation || 0);
-  const vertical = r % 180 !== 0;
-  const delta = vertical ? (e.clientY - sy) : (e.clientX - sx);
-  const newW = Math.max(grid, Math.round((sw + delta) / grid) * grid);
-el.style.width = newW + "px";
-el.style.transformOrigin = "left center";
-  el.style.height = "14px";
-} else {
-  el.style.width = Math.max(grid, Math.round((sw + e.clientX - sx) / grid) * grid) + "px";
-  el.style.height = Math.max(grid, Math.round((sh + e.clientY - sy) / grid) * grid) + "px";
+ const h=el.querySelector(".resize");let sx,sy,sw,sh,res=false;
+ h.addEventListener("pointerdown",e=>{res=true;sx=e.clientX;sy=e.clientY;sw=el.offsetWidth;sh=el.offsetHeight;h.setPointerCapture(e.pointerId);e.stopPropagation()});
+ h.addEventListener("pointermove",e=>{if(!res)return;el.style.width=Math.max(grid,snap(sw+e.clientX-sx))+"px";el.style.height=Math.max(grid,snap(sh+e.clientY-sy))+"px";updateLength(el)});
+ h.addEventListener("pointerup",e=>{res=false;try{h.releasePointerCapture(e.pointerId)}catch{}});
 }
-updateLength(el);
- });
- handle.addEventListener("pointerup",e=>{res=false;try{handle.releasePointerCapture(e.pointerId)}catch{}});
-}
-
-function updateLength(el){
- const box=el.querySelector(".length");
- const feet=Math.round(el.offsetWidth/grid);
- box.textContent=el.dataset.type==="wall" ? `${feet} ft` : `${Math.round(el.offsetWidth/grid)}×${Math.round(el.offsetHeight/grid)} ft`;
-}
-
-function editDims(el){
- const w=prompt("Width in feet:",Math.round(el.offsetWidth/grid));
- if(!w)return;
- const h=prompt("Height in feet:",Math.round(el.offsetHeight/grid));
- if(!h)return;
- el.style.width=(+w*grid)+"px"; el.style.height=(+h*grid)+"px"; updateLength(el);
-}
-
-function createCustom(){
- const name=document.getElementById("customName").value.trim();
- const color=document.getElementById("customColor").value;
- if(!name){alert("Name the custom item first.");return}
- const key="custom_"+Date.now();
- types[key]={label:name,w:100,h:50,color:color,text:"white"};
- addItem(key,80,80,0,100,50,name,color);
-}
-
+function updateLength(el){el.querySelector(".length").textContent=`${Math.round(el.offsetWidth/grid)}×${Math.round(el.offsetHeight/grid)} ft`}
+function editDims(el){const w=prompt("Width in feet:",Math.round(el.offsetWidth/grid));if(!w)return;const h=prompt("Height in feet:",Math.round(el.offsetHeight/grid));if(!h)return;el.style.width=w*grid+"px";el.style.height=h*grid+"px";updateLength(el)}
+function addTextBox(){const text=prompt("Label text:");if(text)addItem("textbox",80,80,0,150,50,text,"#fff")}
+function createCustom(){const name=document.getElementById("customName").value.trim(),color=document.getElementById("customColor").value;if(!name)return alert("Name it first.");const key="custom_"+Date.now();types[key]={label:name,w:100,h:50,color,text:"white"};addItem(key,80,80,0,100,50,name,color)}
 function updateLegend(){
  const used=[...document.querySelectorAll(".item")].map(i=>({label:i.dataset.label,color:i.dataset.color}));
- const unique=[]; used.forEach(u=>{if(!unique.find(x=>x.label===u.label&&x.color===u.color))unique.push(u)});
+ if(document.querySelector(".wallLine"))used.unshift({label:"Wall",color:"black"});
+ const unique=[];used.forEach(u=>{if(!unique.find(x=>x.label===u.label&&x.color===u.color))unique.push(u)});
  document.getElementById("legend").innerHTML=unique.map(u=>`<span><span class="swatch" style="background:${u.color}"></span>${u.label}</span>`).join("");
 }
-
-function addTextBox(){
- const text=prompt("Label text:");
- if(!text)return;
- addItem("textbox",80,80,0,150,50,text,"#ffffff");
-}
-types.textbox={label:"Text Box",w:150,h:50,color:"#ffffff",text:"black"};
- 
 function saveLayout(){
- const data=[...document.querySelectorAll(".item")].map(el=>({type:el.dataset.type,x:parseInt(el.style.left),y:parseInt(el.style.top),rotation:+el.dataset.rotation,w:el.offsetWidth,h:el.offsetHeight,label:el.dataset.label,color:el.dataset.color}));
- localStorage.setItem("roomLayout",JSON.stringify(data));alert("Saved");
+ const data=[...document.querySelectorAll("[data-kind]")].map(el=>el.dataset.kind==="wall"?{kind:"wall",x1:+el.dataset.x1,y1:+el.dataset.y1,x2:+el.dataset.x2,y2:+el.dataset.y2}:{kind:"item",type:el.dataset.type,x:parseInt(el.style.left),y:parseInt(el.style.top),rotation:+el.dataset.rotation,w:el.offsetWidth,h:el.offsetHeight,label:el.dataset.label,color:el.dataset.color});
+ localStorage.setItem("roomLayoutV2",JSON.stringify(data));alert("Saved");
 }
-function loadLayout(){room.innerHTML="";JSON.parse(localStorage.getItem("roomLayout")||"[]").forEach(i=>addItem(i.type,i.x,i.y,i.rotation,i.w,i.h,i.label,i.color));}
-function clearLayout(){if(confirm("Clear layout?")){room.innerHTML="";updateLegend();}}
+function loadLayout(){[...room.querySelectorAll("[data-kind]")].forEach(e=>e.remove());JSON.parse(localStorage.getItem("roomLayoutV2")||"[]").forEach(i=>i.kind==="wall"?addWall(i.x1,i.y1,i.x2,i.y2):addItem(i.type,i.x,i.y,i.rotation,i.w,i.h,i.label,i.color));updateLegend()}
+function clearLayout(){if(confirm("Clear layout?")){[...room.querySelectorAll("[data-kind]")].forEach(e=>e.remove());updateLegend()}}
 </script>
 </body>
 </html>
